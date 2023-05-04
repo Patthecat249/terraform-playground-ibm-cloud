@@ -1,0 +1,77 @@
+---
+- name: "Setup my local environment"
+  hosts: 127.0.0.1
+  gather_facts: "false"
+  tasks:
+    # - name: "Install some prereqs"
+    #   ansible.builtin.yum:
+    #     name:
+    #       - yum-utils
+
+    # - name: "Add Terraform repo"
+    #   ansible.builtin.yum_repository:
+    #     name: Terraform
+    #     description: "terraform repository"
+    #     baseurl: https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo
+    #     gpgcheck: no
+
+    # - name: "Install terraform"
+    #   ansible.builtin.yum:
+    #     name:
+    #       - terraform
+
+    - name: Create a directory if it does not exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+        recurse: true
+      loop:
+        - "$HOME/terraform-downloads/"
+        - "$HOME/.terraform.d/plugins/ibm/"
+
+    - name: "Download terraform and ibm-terraform-provider-plugin-files"
+      ansible.builtin.get_url:
+        url: "{{ item }}"
+        dest: "$HOME/"
+      loop:
+        - "https://releases.hashicorp.com/terraform/1.4.6/terraform_1.4.6_linux_amd64.zip"
+        - "https://github.com/IBM-Cloud/terraform-provider-ibm/releases/download/v1.52.1/terraform-provider-ibm_1.52.1_linux_amd64.zip"
+
+    - name: "Extract terraform zip-file"
+      ansible.builtin.unarchive:
+        src: "$HOME/terraform_1.4.6_linux_amd64.zip"
+        dest: "$HOME/terraform-downloads/"
+        remote_src: true
+
+    - name: "Extract ibm-terraform-provider-plugin zip-file"
+      ansible.builtin.unarchive:
+        src: "$HOME/terraform-provider-ibm_1.52.1_linux_amd64.zip"
+        dest: "$HOME/terraform-downloads/"
+        remote_src: true
+
+    - name: "Copy terraform-file to executable-path"
+      copy:
+        src: "$HOME/terraform-downloads/terraform"
+        dest: "/usr/bin"
+        mode: "0555"
+        remote_src: true
+
+    - name: "Copy terraform-plugin-file to plugin-folder"
+      copy:
+        src: "$HOME/terraform-downloads/terraform-provider-ibm_v1.52.1"
+        dest: "$HOME/.terraform.d/ibm"
+        remote_src: true
+
+    # - name: "Remove downloaded-zip-file"
+    #   ansible.builtin.file:
+    #     path: "{{ item }}"
+    #     state: absent
+    #   loop:
+    #     - "$HOME/terraform.zip"
+    #     - "$HOME/CHANGELOG.md"
+    #     - "$HOME/README.md"
+    #     - "$HOME/NOTICE"
+    #     - "$HOME/LICENSE"
+    #     - "$HOME/provider_metadata.json"
+    #     - "$HOME/terraform-provider-ibm_v1.52.1"
